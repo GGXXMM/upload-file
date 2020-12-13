@@ -1,40 +1,76 @@
-export default {
-  // Global page headers (https://go.nuxtjs.dev/config-head)
+
+module.exports = {
+  mode: 'universal',
+  /*
+  ** Headers of the page
+  */
   head: {
-    title: 'client',
+    title: '小开社区',
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { hid: 'description', name: 'description', content: '' }
+      { hid: 'description', name: 'description', content: process.env.npm_package_description || '' }
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
     ]
   },
-
-  // Global CSS (https://go.nuxtjs.dev/config-css)
+  /*
+  ** Customize the progress-bar color
+  */
+  loading: { color: '#fff' },
+  /*
+  ** Global CSS
+  */
   css: [
     'element-ui/lib/theme-chalk/index.css'
   ],
-
-  // Plugins to run before rendering page (https://go.nuxtjs.dev/config-plugins)
+  /*
+  ** Plugins to load before mounting the App
+  */
   plugins: [
-    '@/plugins/element-ui'
+    '@/plugins/element-ui',
+    '@/plugins/axios'
   ],
-
-  // Auto import components (https://go.nuxtjs.dev/config-components)
-  components: true,
-
-  // Modules for dev and build (recommended) (https://go.nuxtjs.dev/config-modules)
-  buildModules: [
+  /*
+  ** Nuxt.js dev-modules
+  */
+  devModules: [
+    // Doc: https://github.com/nuxt-community/eslint-module
+    // '@nuxtjs/eslint-module'
   ],
-
-  // Modules (https://go.nuxtjs.dev/config-modules)
+  /*
+  ** Nuxt.js modules
+  */
   modules: [
+    // Doc: https://axios.nuxtjs.org/usage
+    '@nuxtjs/axios',
+    '@nuxtjs/proxy'
   ],
-
-  // Build Configuration (https://go.nuxtjs.dev/config-build)
+  /*
+  ** Axios module configuration
+  ** See https://axios.nuxtjs.org/options
+  */
+  axios: {
+  },
+  /*
+  ** Build configuration
+  */
   build: {
     transpile: [/^element-ui/],
+    /*
+    ** You can extend webpack config here
+    */
+    extend (config, ctx) {
+    }
+  },
+  proxy:{
+    "/api/":{
+      target:"http://localhost:7001",
+      secure:false,
+      pathRewrite:{
+        '^/api':""
+      }
+    }
   }
 }

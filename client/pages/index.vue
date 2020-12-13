@@ -1,46 +1,65 @@
 <template>
-  <div class="container">
+  <div>
     <div>
-      <Logo />
-      <h1 class="title">
-        client
-      </h1>
-      <div class="links">
-        <a
-          href="https://nuxtjs.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="button--green"
-        >
-          Documentation
-        </a>
-        <a
-          href="https://github.com/nuxt/nuxt.js"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="button--grey"
-        >
-          GitHub
-        </a>
+      <h3 class="title">
+        普通文件上传
+      </h3>
+      <div ref="drag" id="drag">
+        <input type="file" name="file" @change="handleFileChange">
       </div>
+      
+    </div>
+    <div>
+      <el-button @click="uploadFile">上传</el-button>
     </div>
   </div>
 </template>
 
 <script>
-export default {}
+export default {
+  data() {
+    return {
+      file: null
+    }
+  },
+  mounted() {
+    this.bindEvent()
+  },
+  methods: {
+    uploadFile() {
+      const form = new FormData();
+      form.append('name', this.file.name);
+      form.append('file', this.file);
+
+      this.$http.post('/uploadfile', form)
+
+    },
+    handleFileChange(e) {
+      const [file] = e.target.files;
+      if(!file) return;
+      this.file = file;
+    },
+    bindEvent() {
+      const drag = this.$refs.drag;
+      drag.addEventListener('dragover', e => {
+        drag.style.borderColor = 'red';
+        e.preventDefault();
+      })
+      drag.addEventListener('dragleave', e => {
+        drag.style.borderColor = '#eee';
+        e.preventDefault();
+      })
+      drag.addEventListener('drop', e => {
+        const fileList = e.dataTransfer.files;
+        this.file = fileList[0];
+        e.preventDefault();
+      })
+    }
+  },
+}
 </script>
 
 <style>
-.container {
-  margin: 0 auto;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
 .title {
   font-family:
     'Quicksand',
@@ -54,20 +73,14 @@ export default {}
     sans-serif;
   display: block;
   font-weight: 300;
-  font-size: 100px;
+  font-size: 30px;
   color: #35495e;
   letter-spacing: 1px;
 }
-
-.subtitle {
-  font-weight: 300;
-  font-size: 42px;
-  color: #526488;
-  word-spacing: 5px;
-  padding-bottom: 15px;
-}
-
-.links {
-  padding-top: 15px;
+#drag {
+  height: 100px;
+  line-height: 100px;
+  border: 2px dashed #ddd;
+  text-align: center;
 }
 </style>
