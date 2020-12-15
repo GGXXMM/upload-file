@@ -7,7 +7,7 @@
       <div ref="drag" id="drag">
         <input type="file" name="file" @change="handleFileChange">
       </div>
-      
+      <el-progress :stroke-width="20"	 :percentage="uploadProgress"></el-progress>
     </div>
     <div>
       <el-button @click="uploadFile">上传</el-button>
@@ -19,7 +19,8 @@
 export default {
   data() {
     return {
-      file: null
+      file: null,
+      uploadProgress: 0
     }
   },
   mounted() {
@@ -31,7 +32,11 @@ export default {
       form.append('name', this.file.name);
       form.append('file', this.file);
 
-      this.$http.post('/uploadfile', form)
+      this.$http.post('/uploadfile', form, {
+        onUploadProgress: progress => {
+          this.uploadProgress = Number(((progress.loaded/progress.total)*100).toFixed(2))
+        }
+      })
 
     },
     handleFileChange(e) {
