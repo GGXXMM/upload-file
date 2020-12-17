@@ -28,16 +28,63 @@ export default {
   },
   methods: {
     uploadFile() {
-      const form = new FormData();
-      form.append('name', this.file.name);
-      form.append('file', this.file);
+      if(!await this.isImage(this.file)) {
+        console.log('不是图片')
+        return
+      }else{
+        console.log('图片格式正确')
+      }
+      // const form = new FormData();
+      // form.append('name', this.file.name);
+      // form.append('file', this.file);
 
-      this.$http.post('/uploadfile', form, {
-        onUploadProgress: progress => {
-          this.uploadProgress = Number(((progress.loaded/progress.total)*100).toFixed(2))
+      // this.$http.post('/uploadfile', form, {
+      //   onUploadProgress: progress => {
+      //     this.uploadProgress = Number(((progress.loaded/progress.total)*100).toFixed(2))
+      //   }
+      // })
+
+    },
+    async blobToString(blob){
+      return new Promise(resolve=> {
+        const reader = new FileReader();
+        reader.onload = function() {
+          console.log(reader.result)
+          const ret = reader.result.split('')
+                        .map(v=> v.charCodeAt())
+                        .map(v=>v.toString(16).toUpperCase())
+                        .join('')
+          resolve(ret)
         }
+        reader.readAsBinaryString(blob);
       })
-
+    },
+    async isGif(file){
+      // GIF89a 和 GIF87a（2种gif图片规范）
+      // 47 49 46 38 39 61 || 47 49 46 38 37 61
+      // 前6个字节
+      const ret = await this.blobToString(file.slice(0,6));
+      console.log(ret)
+      const isGif = (ret == '47 49 46 38 39 61') || (ret == '47 49 46 38 37 61');
+      return isGif;
+    },
+    async isPng(file) {
+      // 前8个字节
+      const ret = await this.blobToString(file.slice(0,8));
+      const isPng = (ret == '89 50 4E 47 0D 0A 1A 0A');
+      return isPng;
+    },
+    async isJpg(file) {
+      // 头2个字节、结尾2个字节
+      const len = file.size;
+      const start = await this.blobToString(file.slice(0,2));
+      const tail = await this.blobToString(file.slice(-2));
+      const isJpg = (start == 'FF D8') && (tail == 'FF D9');
+      return isJpg;
+    },
+    // 判断图片格式
+    async isImage(file) {
+      return await this.isGif(file) || await this.isPng(file) || await this.isJpg(file)
     },
     handleFileChange(e) {
       const [file] = e.target.files;
