@@ -12,28 +12,38 @@
     <div>
       <el-button @click="uploadFile">上传</el-button>
     </div>
+    <div>
+      <p>计算hash的进度</p>
+      <el-progress :stroke-width="20"	 :percentage="hashProgess"></el-progress>
+    </div>
   </div>
 </template>
 
 <script>
+const CHUNCK_SIZE = 0.5*1024*1024;
 export default {
   data() {
     return {
       file: null,
-      uploadProgress: 0
+      uploadProgress: 0,
+      hashProgess: 0
     }
   },
   mounted() {
     this.bindEvent()
   },
   methods: {
-    uploadFile() {
-      if(!await this.isImage(this.file)) {
-        console.log('不是图片')
-        return
-      }else{
-        console.log('图片格式正确')
-      }
+    async uploadFile() {
+      // 格式校验
+      // if(!await this.isImage(this.file)) {
+      //   console.log('不是图片')
+      //   return
+      // }else{
+      //   console.log('图片格式正确')
+      // }
+      this.chunks = this.createFileChunk(this.file)
+      const hash = await this.calculateHashWorker() 
+      console.log('hash', hash)
       // const form = new FormData();
       // form.append('name', this.file.name);
       // form.append('file', this.file);
@@ -43,7 +53,30 @@ export default {
       //     this.uploadProgress = Number(((progress.loaded/progress.total)*100).toFixed(2))
       //   }
       // })
-
+    },
+    // 文件切片
+    createFileChunk(file, size=CHUNCK_SIZE) {
+      let chunks = [];
+      let cur = 0;
+      while(cur<this.file.size) {
+        chunks.push({index: cur, file: this.file.slice(cur, cur+size)})
+        cur+=size
+      }
+      return chunks
+    },
+    // webWorker多线程计算hash
+    async calculateHashWorker() {
+      return new Promise(resolve => {
+        this.worker = new Worker('/hash.js');
+        this.worker.postMessage({chunks: this.chunks})
+        this.worker.onmessage = e => {
+          const {progress, hash} = e.data;
+          this.hashProgess = Number(progress.toFixed(2))
+          if(hash) {
+            resolve(hash)
+          }
+        }
+      })
     },
     async blobToString(blob){
       return new Promise(resolve=> {
