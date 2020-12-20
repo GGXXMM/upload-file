@@ -20,6 +20,7 @@
 </template>
 
 <script>
+import SparkMD5 from 'spark-md5'
 const CHUNCK_SIZE = 0.5*1024*1024;
 export default {
   data() {
@@ -42,7 +43,8 @@ export default {
       //   console.log('图片格式正确')
       // }
       this.chunks = this.createFileChunk(this.file)
-      const hash = await this.calculateHashWorker() 
+      // const hash = await this.calculateHashWorker()
+      const hash = await this.calculateHashIdle()
       console.log('hash', hash)
       // const form = new FormData();
       // form.append('name', this.file.name);
@@ -76,6 +78,46 @@ export default {
             resolve(hash)
           }
         }
+      })
+    },
+    // 时间切片计算hash
+    async calculateHashIdle() {
+      const chunks = this.chunks;
+      return new Promise(resolve => {
+        const spark = new SparkMD5.ArrayBuffer();
+        let count = 0;
+
+        const appendToSpark = async file => {
+          return new Promise(resolve=>{
+            const reader = new FileReader()
+            reader.readAsArrayBuffer(file)
+            reader.onload = e=>{
+              spark.append(e.target.result)
+              resolve()
+            }
+          })
+        }
+
+        const workLoop = async deadline => {
+          // timeRemaining获取当前帧的剩余时间
+          while(count<chunks.length && deadline.timeRemaining()>1) {
+            // 有空闲时间，且有任务
+            await appendToSpark(chunks[count].file);
+            count++;
+            if(count<chunks.length) {
+              // 计算中
+              this.hashProgess = Number(
+                ((100*count)/chunks.length).toFixed(2)
+              )
+            }else {
+              this.hashProgess = 100;
+              resolve(spark.end())
+            }
+          }
+          window.requestIdleCallback(workLoop)
+        }
+        // 浏览器一旦空闲，就会调用workLoop
+        window.requestIdleCallback(workLoop)
       })
     },
     async blobToString(blob){
